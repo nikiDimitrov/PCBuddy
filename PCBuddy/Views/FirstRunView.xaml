@@ -9,11 +9,16 @@ ml<?xml version="1.0" encoding="utf-8"?>
     mc:Ignorable="d"
     Title="FirstRunView">
 
+    
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid>
-
-    </Grid>
+    <StackPanel
+        Orientation="Vertical"
+        Spacing="8">
+        <TextBlock 
+            Text="{x:Bind ViewModel.WelcomeText, Mode=OneWay}"
+            FontSize="13"/>
+    </StackPanel>
 </Window>
