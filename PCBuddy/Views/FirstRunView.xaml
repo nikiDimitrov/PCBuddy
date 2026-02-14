@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:PCBuddy.Views"
+    xmlns:uiContainer="using:PCBuddy.ViewModels.UIContainers"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -52,8 +53,19 @@
                 </ItemsControl.ItemsPanel>
 
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        
+                    <DataTemplate x:DataType="uiContainer:ProfileOption">
+                        <Button Command="{x:Bind ViewModel.SelectProfileCommand}"
+                                CommandParameter="{x:Bind}">
+                            <StackPanel>
+                                <Image 
+                                    Source="{x:Bind IconPath}" 
+                                    Width="64"
+                                    Height="64"/>
+                                <TextBlock 
+                                    Text="{x:Bind DisplayName}"
+                                    HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

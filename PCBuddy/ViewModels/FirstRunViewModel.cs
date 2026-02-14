@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using PCBuddy.Models.Enums;
 using PCBuddy.ViewModels.UIContainers;
 using System;
@@ -11,7 +12,7 @@ namespace PCBuddy.ViewModels
     public partial class FirstRunViewModel : ObservableObject
     {
         [ObservableProperty]
-        private ProfileOption? mSelectedProfile;
+        private ProfileOption? selectedProfile;
 
         public ObservableCollection<ProfileOption> ProfileOptions { get; set; }
             = new ObservableCollection<ProfileOption>();
@@ -26,13 +27,19 @@ namespace PCBuddy.ViewModels
             SetProfileOptions();
         }
 
+        [RelayCommand]
+        private void SelectProfile(ProfileOption option)
+        {
+            SelectedProfile = option;
+        }
+
         //TODO: make resources system from json
         private void SetResources()
         {
             WelcomeText = "Welcome To PCBuddy!";
             ChooseProfileText =
                 "PCBuddy needs to know what do you want to do with this PC. Choose a profile.";
-        }
+        }  
 
         /// <summary>
         /// Gets the icon and displayName from the Profile enums.
