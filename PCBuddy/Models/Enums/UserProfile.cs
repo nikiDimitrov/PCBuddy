@@ -2,9 +2,9 @@
 {
     public enum UserProfile
     {
-        OFFICE = 0,
-        GAMING = 1,
-        PROGRAMMING = 2,
-        VIDEO_EDITING = 3
+        Office = 0,
+        Gaming = 1,
+        Programming = 2,
+        Editing = 3
     }
 }

@@ -40,12 +40,23 @@
                 CharacterSpacing="10" />
         </Border>
 
-        <StackPanel Grid.Row="1" Spacing="10">
+        <StackPanel Grid.Row="1" Margin="0,4,0,12" Spacing="11">
             <TextBlock
-                Text="PCBuddy needs to know what do you want to do with this PC. Choose a profile."/>
-            <RadioButtons>
-                <RadioButton Content="Gaming"/>
-            </RadioButtons>
+                Text="{x:Bind ViewModel.ChooseProfileText, Mode=OneWay}"/>
+            <ItemsControl
+                ItemsSource="{x:Bind ViewModel.ProfileOptions}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
     </Grid>
 </Window>
