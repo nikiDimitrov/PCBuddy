@@ -93,6 +93,8 @@
             Grid.Row="2"
             HorizontalAlignment="Center"
             Width="200"
+            IsEnabled="{x:Bind ViewModel.CanApplyProfile, Mode=OneWay}"
+            Command="{x:Bind ViewModel.ApplyProfileCommand}"
             Content="{x:Bind ViewModel.ApplyProfileButtonText, Mode=OneWay}">
         </Button>
     </Grid>

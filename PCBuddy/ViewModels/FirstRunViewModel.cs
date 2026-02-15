@@ -15,6 +15,8 @@ namespace PCBuddy.ViewModels
         [ObservableProperty]
         private UserProfile? selectedProfile;
 
+        public bool CanApplyProfile => SelectedProfile != null;
+
         public ObservableCollection<UserProfile> UserProfiles { get; set; }
             = new ObservableCollection<UserProfile>();
 
@@ -30,10 +32,20 @@ namespace PCBuddy.ViewModels
             SetUserProfiles();
         }
 
+        partial void OnSelectedProfileChanged(UserProfile? value)
+        {
+            OnPropertyChanged(nameof(CanApplyProfile));
+        }
+
         public void ProfileView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedProfile = e.AddedItems[0] as UserProfile;
             SelectedProfile = selectedProfile;
+        }
+
+        [RelayCommand]
+        private void ApplyProfile()
+        {
         }
 
         //TODO: make resources system from json
