@@ -10,7 +10,6 @@
     mc:Ignorable="d"
     Title="FirstRunView">
 
-    
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
@@ -54,8 +53,9 @@
 
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="uiContainer:ProfileOption">
-                        <Button Command="{x:Bind ViewModel.SelectProfileCommand}"
-                                CommandParameter="{x:Bind}">
+                        <Button 
+                            Command="{Binding DataContext.SelectProfileCommand, RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=Window}}"
+                            CommandParameter="{x:Bind}">
                             <StackPanel>
                                 <Image 
                                     Source="{x:Bind IconPath}" 
