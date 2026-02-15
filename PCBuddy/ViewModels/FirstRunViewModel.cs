@@ -1,7 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Xaml.Controls;
+using PCBuddy.Models;
 using PCBuddy.Models.Enums;
-using PCBuddy.ViewModels.UIContainers;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -12,25 +13,27 @@ namespace PCBuddy.ViewModels
     public partial class FirstRunViewModel : ObservableObject
     {
         [ObservableProperty]
-        private ProfileOption? selectedProfile;
+        private UserProfile? selectedProfile;
 
-        public ObservableCollection<ProfileOption> ProfileOptions { get; set; }
-            = new ObservableCollection<ProfileOption>();
+        public ObservableCollection<UserProfile> UserProfiles { get; set; }
+            = new ObservableCollection<UserProfile>();
 
         public string WelcomeText { get; set; }
 
         public string ChooseProfileText { get; set; }
 
+        public string ApplyProfileButtonText { get; set; }
+
         public FirstRunViewModel()
         {
             SetResources();
-            SetProfileOptions();
+            SetUserProfiles();
         }
 
-        [RelayCommand]
-        private void SelectProfile(ProfileOption option)
+        public void ProfileView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SelectedProfile = option;
+            var selectedProfile = e.AddedItems[0] as UserProfile;
+            SelectedProfile = selectedProfile;
         }
 
         //TODO: make resources system from json
@@ -38,19 +41,20 @@ namespace PCBuddy.ViewModels
         {
             WelcomeText = "Welcome To PCBuddy!";
             ChooseProfileText =
-                "PCBuddy needs to know what do you want to do with this PC. Choose a profile.";
+                "PCBuddy needs to know what do you want to do with this PC. Choose a profile!";
+            ApplyProfileButtonText = "Apply Profile";
         }  
 
         /// <summary>
         /// Gets the icon and displayName from the Profile enums.
         /// </summary>
         /// <remarks>
-        /// To add new profile simply add a new value in <see cref="UserProfile"/>.
+        /// To add new profile simply add a new value in <see cref="UserProfileType"/>.
         /// Add the icon to assets/icons with the enum value in lowercase as the name.
         /// </remarks>
-        private void SetProfileOptions()
+        private void SetUserProfiles()
         {
-            var profileTypes = Enum.GetValues<UserProfile>();
+            var profileTypes = Enum.GetValues<UserProfileType>();
 
             foreach(var profileType in profileTypes)
             {
@@ -68,14 +72,14 @@ namespace PCBuddy.ViewModels
                     continue;
 
                 var profileOption =
-                    new ProfileOption
+                    new UserProfile
                     (
                         displayName: profileType.ToString(),
                         iconPathForUI,
                         profileType
                     );
 
-                ProfileOptions.Add(profileOption);
+                UserProfiles.Add(profileOption);
             }
         }
     }

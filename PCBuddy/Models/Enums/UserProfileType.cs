@@ -1,6 +1,6 @@
 ﻿namespace PCBuddy.Models.Enums
 {
-    public enum UserProfile
+    public enum UserProfileType
     {
         Office = 0,
         Gaming = 1,

@@ -1,20 +1,20 @@
 ﻿using PCBuddy.Models.Enums;
 
-namespace PCBuddy.ViewModels.UIContainers
+namespace PCBuddy.Models
 {
-    public class ProfileOption
+    public class UserProfile
     {
         public string DisplayName { get; set; }
 
         public string IconPath { get; set; }
 
-        public UserProfile ProfileType { get; set; }
+        public UserProfileType ProfileType { get; set; }
 
-        public ProfileOption
+        public UserProfile
         (
             string displayName, 
             string iconPath, 
-            UserProfile profileType
+            UserProfileType profileType
         )
         {
             DisplayName = displayName;
