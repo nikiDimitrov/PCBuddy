@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Controls;
 using PCBuddy.Models;
 using PCBuddy.Models.Enums;
+using PCBuddy.Models.Helpers;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -46,6 +47,7 @@ namespace PCBuddy.ViewModels
         [RelayCommand]
         private void ApplyProfile()
         {
+            var computerInfo = ComputerInfoGetter.GetComputerInfo(SelectedProfile!);
         }
 
         //TODO: make resources system from json

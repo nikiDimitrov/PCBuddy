@@ -16,6 +16,6 @@
 
         public bool HasIntegratedGraphics { get; set; }
 
-        public bool HasVirtualization { get; set; }
+        public bool HasVirtualizationEnabled { get; set; }
     }
 }

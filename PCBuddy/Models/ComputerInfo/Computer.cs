@@ -2,7 +2,7 @@
 
 namespace PCBuddy.Models.ComputerInfo
 {
-    public class ComputerInfo
+    public class Computer
     {
         public string OS { get; set; }
 
@@ -11,7 +11,5 @@ namespace PCBuddy.Models.ComputerInfo
         public List<GraphicsAdapter> GPUs { get; set; }
         
         public MemoryInfo MemoryInfo { get; set; }
-
-        
     }
 }

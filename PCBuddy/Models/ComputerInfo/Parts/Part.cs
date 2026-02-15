@@ -5,7 +5,5 @@
         public string Manufacturer { get; set; }
 
         public string ModelName { get; set; }
-
-        public int ReleaseYear { get; set; }
     }
 }
