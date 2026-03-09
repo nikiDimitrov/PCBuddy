@@ -2,7 +2,8 @@
 {
     public enum MemoryFormFactor
     {
-        SODIMM = 0,
-        DIMM = 1
+        Unknown = 0,
+        DIMM = 8,
+        SODIMM = 12
     }
 }

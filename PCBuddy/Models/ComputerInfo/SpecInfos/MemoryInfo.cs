@@ -8,32 +8,28 @@ namespace PCBuddy.Models.ComputerInfo
     /// </summary>
     public class MemoryInfo
     {
-        public List<MemoryStick> MemorySticks { get; set; }
+        public List<MemoryStick> MemorySticks { get; set; } = new();
 
         public int MaxSupportedMemory { get; set; }
 
         public int TotalMemorySlots { get; set; }
 
-        public int UsedMemorySlots
-        {
-            get
-            {
-                if (MemorySticks is null)
-                    return 0;
+        public int UsedMemorySlots => MemorySticks.Count;
 
-                return MemorySticks.Count;
-            }
-        }
+        public int AvailableSlots => TotalMemorySlots - UsedMemorySlots;
 
-        public int TotalInstalledMemory
-        {
-            get
-            {
-                if (MemorySticks is null)
-                    return 0;
+        public int TotalInstalledMemory => MemorySticks.Sum(stick => stick.CapacityMB);
 
-                return MemorySticks.Sum(stick => stick.CapacityMB);
-            }
-        }
+        public bool HasMixedMemoryTypes => 
+            MemorySticks
+            ?.Select(s => s.MemoryType)
+            ?.Distinct()
+            ?.Count() > 1;
+
+        public bool HasMixedFrequencies =>
+            MemorySticks
+            ?.Select(s => s.Frequency)
+            ?.Distinct()
+            ?.Count() > 1;
     }
 }

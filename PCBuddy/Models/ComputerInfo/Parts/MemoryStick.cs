@@ -8,7 +8,7 @@ namespace PCBuddy.Models.ComputerInfo
 
         public int ChannelIndex { get; set; }
 
-        public string MemoryType { get; set; }
+        public MemoryType MemoryType { get; set; }
 
         public int Frequency { get; set; }
 

@@ -2,7 +2,8 @@
 {
     public enum GraphicsAdapterType
     {
-        INTEGRATED = 0,
-        DEDICATED = 1
+        Unknown = 0,
+        Integrated = 1,
+        Dedicated = 2
     }
 }

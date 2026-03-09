@@ -10,10 +10,6 @@ namespace PCBuddy.Models.ComputerInfo
 
         public Driver Driver { get; set; }
 
-        public bool IsVulkanSupported { get; set; }
-
-        public bool IsOpenCLSupported { get; set; }
-
         public bool IsMobileVariant { get; set; }
     }
 }
