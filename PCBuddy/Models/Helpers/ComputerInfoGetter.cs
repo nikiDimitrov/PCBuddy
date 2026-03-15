@@ -14,13 +14,21 @@ namespace PCBuddy.Models.Helpers
     {
         public static async Task<Computer> GetComputerInfo(UserProfile userProfile)
         {
-            var computer = new Computer();
-
             var processorTask = RunWmiAsync(GetProcessorInfo);
             var graphicsTask = RunWmiAsync(GetGraphicsAdapters);
             var memoryTask = RunWmiAsync(GetMemoryInfo);
+            var storageTask = RunWmiAsync(GetStorageDisks);
 
             await Task.WhenAll(processorTask, graphicsTask, memoryTask);
+
+            var computer =
+                new Computer()
+                {
+                    Processor = processorTask.Result,
+                    GPUs = graphicsTask.Result,
+                    MemoryInfo = memoryTask.Result,
+                    StorageDisks = storageTask.Result
+                };
 
             return computer;
         }
@@ -224,6 +232,56 @@ namespace PCBuddy.Models.Helpers
             var dataWidth = Convert.ToInt32(obj["DataWidth"]);
 
             return totalWidth > dataWidth;
+        }
+
+        #endregion
+
+        #region StorageDisk Methods
+
+        private static List<StorageDisk> GetStorageDisks()
+        {
+            var disks = new List<StorageDisk>();
+
+            using var searcher = new ManagementObjectSearcher(
+                "SELECT * FROM Win32_DiskDrive");
+
+            foreach (ManagementObject disk in searcher.Get())
+            {
+                var storageDisk = new StorageDisk
+                {
+                    Manufacturer = disk["Manufacturer"]?.ToString(),
+                    ModelName = disk["Model"]?.ToString(),
+
+                    Interface = disk["InterfaceType"]?.ToString(),
+
+                    FirmwareRevision = disk["FirmwareRevision"]?.ToString(),
+
+                    CapacityMB = disk["Size"] != null
+                        ? Convert.ToInt32((ulong)disk["Size"] / (1024 * 1024))
+                        : 0
+                };
+
+                // Get partitions
+                var partitions = disk.GetRelated("Win32_DiskPartition");
+
+                foreach (ManagementObject partition in partitions)
+                {
+                    var logicalDisks = partition.GetRelated("Win32_LogicalDisk");
+
+                    foreach (ManagementObject logical in logicalDisks)
+                    {
+                        if (logical["FreeSpace"] != null)
+                        {
+                            storageDisk.FreeSpaceMB +=
+                                Convert.ToInt32((ulong)logical["FreeSpace"] / (1024 * 1024));
+                        }
+                    }
+                }
+
+                disks.Add(storageDisk);
+            }
+
+            return disks;
         }
 
         #endregion

@@ -9,6 +9,8 @@ namespace PCBuddy.Models.ComputerInfo
         public Processor Processor { get; set; }
 
         public List<GraphicsAdapter> GPUs { get; set; }
+
+        public List<StorageDisk> StorageDisks { get; set; }
         
         public MemoryInfo MemoryInfo { get; set; }
     }
