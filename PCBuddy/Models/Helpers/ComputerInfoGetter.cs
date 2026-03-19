@@ -19,7 +19,7 @@ namespace PCBuddy.Models.Helpers
             var memoryTask = RunWmiAsync(GetMemoryInfo);
             var storageTask = RunWmiAsync(GetStorageDisks);
 
-            await Task.WhenAll(processorTask, graphicsTask, memoryTask);
+            await Task.WhenAll(processorTask, graphicsTask, memoryTask, storageTask);
 
             var computer =
                 new Computer()
@@ -38,8 +38,22 @@ namespace PCBuddy.Models.Helpers
         private static Processor GetProcessorInfo()
         {
             var processor = new Processor();
+            var queryArgs =
+                new[]
+                {
+                    "Architecture",
+                    "Manufacturer",
+                    "Name",
+                    "NumberOfCores",
+                    "NumberOfLogicalProcessors",
+                    "MaxClockSpeed"
+                };
 
-            using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
+            using var searcher = 
+                new ManagementObjectSearcher
+                (
+                    $"SELECT {queryArgs.ToQueryNames()} FROM Win32_Processor"
+                );
 
             foreach (ManagementObject obj in searcher.Get())
             {
@@ -69,14 +83,27 @@ namespace PCBuddy.Models.Helpers
         {
             var adapters = new List<GraphicsAdapter>();
 
-            using var searcher = new ManagementObjectSearcher(
-                "SELECT * FROM Win32_VideoController");
+            var queryArgs =
+                new[]
+                {
+                    "Name",
+                    "AdapterCompatibility",
+                    "AdapterRAM",
+                    "DriverVersion",
+                    "DriverDate"
+                };
+
+            using var searcher = 
+                new ManagementObjectSearcher
+                (
+                    $"SELECT {queryArgs.ToQueryNames()} FROM Win32_VideoController"
+                );
 
             foreach (ManagementObject obj in searcher.Get())
             {
                 var name = obj["Name"]?.ToString();
 
-                if (string.IsNullOrWhiteSpace(name))
+                if (string.IsNullOrEmpty(name))
                     continue;
 
                 //ignore software fallback adapter
@@ -137,8 +164,18 @@ namespace PCBuddy.Models.Helpers
 
             memoryInfo.MemorySticks = GetMemorySticks();
 
-            using var searcher = new ManagementObjectSearcher(
-                "SELECT * FROM Win32_PhysicalMemoryArray");
+            var queryArgs =
+                new[]
+                {
+                    "MemoryDevices",
+                    "MaxCapacity"
+                };
+
+            using var searcher = 
+                new ManagementObjectSearcher
+                (
+                    $"SELECT {queryArgs.ToQueryNames()} FROM Win32_PhysicalMemoryArray"
+                );
 
             foreach (ManagementObject obj in searcher.Get())
             {
@@ -159,8 +196,22 @@ namespace PCBuddy.Models.Helpers
         {
             var sticks = new List<MemoryStick>();
 
-            using var searcher = new ManagementObjectSearcher(
-                "SELECT * FROM Win32_PhysicalMemory");
+            var queryArgs =
+                new[]
+                {
+                    "Manufacturer",
+                    "PartNumber",
+                    "Capacity",
+                    "Speed",
+                    "SMBIOSMemoryType",
+                    "FormFactor"
+                };
+
+            using var searcher = 
+                new ManagementObjectSearcher
+                (
+                    $"SELECT {queryArgs.ToQueryNames()} FROM Win32_PhysicalMemory"
+                );
 
             var slotIndex = 0;
 
@@ -177,8 +228,8 @@ namespace PCBuddy.Models.Helpers
                         ? Convert.ToInt32((ulong)obj["Capacity"] / (1024 * 1024))
                         : 0,
 
-                    Frequency = obj["ConfiguredClockSpeed"] != null
-                        ? Convert.ToInt32(obj["ConfiguredClockSpeed"])
+                    Frequency = obj["Speed"] != null
+                        ? Convert.ToInt32(obj["Speed"])
                         : 0,
 
                     MemoryType = MapMemoryType(obj["SMBIOSMemoryType"]),
@@ -217,9 +268,9 @@ namespace PCBuddy.Models.Helpers
             var formFactor = Convert.ToInt32(value);
 
             return 
-                Enum.IsDefined(typeof(MemoryFormFactor), formFactor)
-                ? (MemoryFormFactor)formFactor
-                : MemoryFormFactor.Unknown;
+                Enum.IsDefined(typeof(MemoryFormFactor), formFactor) ?
+                (MemoryFormFactor)formFactor : 
+                MemoryFormFactor.Unknown;
         }
 
         private static bool DetectECC(ManagementObject obj)
@@ -242,8 +293,18 @@ namespace PCBuddy.Models.Helpers
         {
             var disks = new List<StorageDisk>();
 
+            var queryArgs =
+                new[]
+                {
+                    "Manufacturer",
+                    "Model",
+                    "InterfaceType",
+                    "FirmwareRevision",
+                    "Size"
+                };
+
             using var searcher = new ManagementObjectSearcher(
-                "SELECT * FROM Win32_DiskDrive");
+                $"SELECT {queryArgs.ToQueryNames()} FROM Win32_DiskDrive");
 
             foreach (ManagementObject disk in searcher.Get())
             {
@@ -295,12 +356,21 @@ namespace PCBuddy.Models.Helpers
 
         private static DateTime ParseManagementDate(object value)
         {
-            if (value == null)
+            if (value is null)
                 return DateTime.MinValue;
 
             return ManagementDateTimeConverter.ToDateTime(value.ToString());
         }
 
         #endregion
+ 
+    }
+
+    internal static class ArrayExtensions
+    {
+        public static string ToQueryNames(this string[] queryArgs)
+        {
+            return string.Join(", ", queryArgs);
+        }
     }
 }

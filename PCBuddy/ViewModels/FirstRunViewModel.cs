@@ -1,9 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Controls;
+using Newtonsoft.Json;
 using PCBuddy.Models;
 using PCBuddy.Models.Enums;
 using PCBuddy.Models.Helpers;
+using PCBuddy.Models.Settings;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -47,7 +49,17 @@ namespace PCBuddy.ViewModels
         [RelayCommand]
         private void ApplyProfile()
         {
-            var computerInfo = ComputerInfoGetter.GetComputerInfo(SelectedProfile!);
+            var computerInfo = ComputerInfoGetter.GetComputerInfo(SelectedProfile!).Result;
+
+            var jsonSettingsObject =
+                new JsonSettingsObject()
+                {
+                    Profile = SelectedProfile,
+                    Computer = computerInfo
+                };
+
+
+            var settingsSerialized = JsonConvert.SerializeObject(jsonSettingsObject);
         }
 
         //TODO: make resources system from json
