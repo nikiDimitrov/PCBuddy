@@ -12,23 +12,15 @@ namespace PCBuddy.Models.Helpers
     /// </summary>
     public static class ComputerInfoGetter
     {
-        public static async Task<Computer> GetComputerInfo(UserProfile userProfile)
+        public static Computer GetComputerInfo(UserProfile userProfile)
         {
-            var processorTask = RunWmiAsync(GetProcessorInfo);
-            var graphicsTask = RunWmiAsync(GetGraphicsAdapters);
-            var memoryTask = RunWmiAsync(GetMemoryInfo);
-            var storageTask = RunWmiAsync(GetStorageDisks);
-
-            await Task.WhenAll(processorTask, graphicsTask, memoryTask, storageTask);
-
-            var computer =
-                new Computer()
-                {
-                    Processor = processorTask.Result,
-                    GPUs = graphicsTask.Result,
-                    MemoryInfo = memoryTask.Result,
-                    StorageDisks = storageTask.Result
-                };
+            var computer = new Computer
+            {
+                Processor = GetProcessorInfo(),
+                GPUs = GetGraphicsAdapters(),
+                MemoryInfo = GetMemoryInfo(),
+                StorageDisks = GetStorageDisks()
+            };
 
             return computer;
         }
@@ -204,7 +196,9 @@ namespace PCBuddy.Models.Helpers
                     "Capacity",
                     "Speed",
                     "SMBIOSMemoryType",
-                    "FormFactor"
+                    "FormFactor",
+                    "TotalWidth",
+                    "DataWidth"
                 };
 
             using var searcher = 
@@ -293,49 +287,79 @@ namespace PCBuddy.Models.Helpers
         {
             var disks = new List<StorageDisk>();
 
-            var queryArgs =
-                new[]
-                {
-                    "Manufacturer",
-                    "Model",
-                    "InterfaceType",
-                    "FirmwareRevision",
-                    "Size"
-                };
+            var logicalDisks = new Dictionary<string, ulong>();
 
-            using var searcher = new ManagementObjectSearcher(
-                $"SELECT {queryArgs.ToQueryNames()} FROM Win32_DiskDrive");
-
-            foreach (ManagementObject disk in searcher.Get())
+            using (var logicalSearcher = new ManagementObjectSearcher(
+                "SELECT DeviceID, FreeSpace FROM Win32_LogicalDisk WHERE DriveType = 3"))
             {
+                foreach (ManagementObject logical in logicalSearcher.Get())
+                {
+                    if (logical["DeviceID"] is null ||
+                        logical["FreeSpace"] is null)
+                        continue;
+
+                    logicalDisks[$"{logical["DeviceID"]}"] =
+                        (ulong)logical["FreeSpace"];
+                }
+            }
+
+            // 2. Get disks
+            using var diskSearcher = new ManagementObjectSearcher(
+                "SELECT DeviceID, Model, InterfaceType, Size FROM Win32_DiskDrive");
+
+            foreach (ManagementObject disk in diskSearcher.Get())
+            {
+                var diskId = $"{disk["DeviceID"]}";
+
                 var storageDisk = new StorageDisk
                 {
-                    Manufacturer = disk["Manufacturer"]?.ToString(),
-                    ModelName = disk["Model"]?.ToString(),
+                    ModelName = $"{disk["Model"]}",
+                    Interface = $"{disk["InterfaceType"]}",
 
-                    Interface = disk["InterfaceType"]?.ToString(),
-
-                    FirmwareRevision = disk["FirmwareRevision"]?.ToString(),
-
-                    CapacityMB = disk["Size"] != null
+                    CapacityMB = 
+                        disk["Size"] != null
                         ? Convert.ToInt32((ulong)disk["Size"] / (1024 * 1024))
-                        : 0
+                        : 0,
+
+                    FreeSpaceMB = 0
                 };
 
-                // Get partitions
-                var partitions = disk.GetRelated("Win32_DiskPartition");
-
-                foreach (ManagementObject partition in partitions)
+                if (string.IsNullOrEmpty(diskId))
                 {
-                    var logicalDisks = partition.GetRelated("Win32_LogicalDisk");
+                    disks.Add(storageDisk);
+                    continue;
+                }
 
-                    foreach (ManagementObject logical in logicalDisks)
+                var escapedDiskId = EscapeWmiPath(diskId);
+
+                using var partitionSearcher = new ManagementObjectSearcher($@"
+            ASSOCIATORS OF {{Win32_DiskDrive.DeviceID=""{escapedDiskId}""}} 
+            WHERE AssocClass = Win32_DiskDriveToDiskPartition");
+
+                foreach (ManagementObject partition in partitionSearcher.Get())
+                {
+                    var partitionId = $"{partition["DeviceID"]}";
+
+                    if (string.IsNullOrEmpty(partitionId))
+                        continue;
+
+                    var escapedPartitionId = EscapeWmiPath(partitionId);
+
+                    // 4. Get logical disks for this partition
+                    using var logicalSearcher2 = new ManagementObjectSearcher($@"
+                ASSOCIATORS OF {{Win32_DiskPartition.DeviceID=""{escapedPartitionId}""}} 
+                WHERE AssocClass = Win32_LogicalDiskToPartition");
+
+                    foreach (ManagementObject logical in logicalSearcher2.Get())
                     {
-                        if (logical["FreeSpace"] != null)
-                        {
-                            storageDisk.FreeSpaceMB +=
-                                Convert.ToInt32((ulong)logical["FreeSpace"] / (1024 * 1024));
-                        }
+                        var logicalId = $"{logical["DeviceID"]}";
+
+                        if (string.IsNullOrEmpty(logicalId) ||
+                           !logicalDisks.ContainsKey(logicalId))
+                            continue;
+
+                        storageDisk.FreeSpaceMB +=
+                            Convert.ToInt32(logicalDisks[logicalId] / (1024 * 1024));
                     }
                 }
 
@@ -349,11 +373,6 @@ namespace PCBuddy.Models.Helpers
 
         #region Helper Methods
 
-        private static Task<T> RunWmiAsync<T>(Func<T> func)
-        {
-            return Task.Run(func);
-        }
-
         private static DateTime ParseManagementDate(object value)
         {
             if (value is null)
@@ -362,15 +381,22 @@ namespace PCBuddy.Models.Helpers
             return ManagementDateTimeConverter.ToDateTime(value.ToString());
         }
 
+        private static string EscapeWmiPath(string value)
+        {
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"");
+        }
+
         #endregion
- 
+
     }
 
     internal static class ArrayExtensions
     {
         public static string ToQueryNames(this string[] queryArgs)
         {
-            return string.Join(", ", queryArgs);
+            return string.Join(",", queryArgs);
         }
     }
 }

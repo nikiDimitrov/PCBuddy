@@ -49,17 +49,9 @@ namespace PCBuddy.ViewModels
         [RelayCommand]
         private void ApplyProfile()
         {
-            var computerInfo = ComputerInfoGetter.GetComputerInfo(SelectedProfile!).Result;
+            var computerInfo = ComputerInfoGetter.GetComputerInfo(SelectedProfile!);
 
-            var jsonSettingsObject =
-                new JsonSettingsObject()
-                {
-                    Profile = SelectedProfile,
-                    Computer = computerInfo
-                };
-
-
-            var settingsSerialized = JsonConvert.SerializeObject(jsonSettingsObject);
+            JsonSettingsManager.SaveComputerSettingsToFile(SelectedProfile!, computerInfo);
         }
 
         //TODO: make resources system from json
