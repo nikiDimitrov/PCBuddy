@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "PCBuddy (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "PCBuddy (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
