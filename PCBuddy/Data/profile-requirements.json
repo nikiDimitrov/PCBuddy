@@ -1,0 +1,86 @@
+{
+  "Office": {
+    "Cpu": {
+      "MinCores": 4,
+      "MinThreads": 4,
+      "MinBaseClockGhz": 2.0,
+      "RequireVirtualization": false
+    },
+    "Gpu": {
+      "MinVramMb": 1024,
+      "RecommendedVramMb": 2048
+    },
+    "Ram": {
+      "MinGb": 4,
+      "RecommendedGb": 8
+    },
+    "Storage": {
+      "MinStorageGb": 128,
+      "RecommendedStorageGb": 256,
+      "RequireSsd": false
+    }
+  },
+  "Gaming": {
+    "Cpu": {
+      "MinCores": 6,
+      "MinThreads": 6,
+      "MinBaseClockGhz": 3.5,
+      "RequireVirtualization": false
+    },
+    "Gpu": {
+      "MinVramMb": 6144,
+      "RecommendedVramMb": 8192
+    },
+    "Ram": {
+      "MinGb": 16,
+      "RecommendedGb": 32
+    },
+    "Storage": {
+      "MinStorageGb": 512,
+      "RecommendedStorageGb": 1024,
+      "RequireSsd": true
+    }
+  },
+  "Programming": {
+    "Cpu": {
+      "MinCores": 4,
+      "MinThreads": 8,
+      "MinBaseClockGhz": 3.0,
+      "RequireVirtualization": false
+    },
+    "Gpu": {
+      "MinVramMb": 2048,
+      "RecommendedVramMb": 4096
+    },
+    "Ram": {
+      "MinGb": 16,
+      "RecommendedGb": 32
+    },
+    "Storage": {
+      "MinStorageGb": 256,
+      "RecommendedStorageGb": 512,
+      "RequireSsd": true
+    }
+  },
+  "Editing": {
+    "Cpu": {
+      "MinCores": 6,
+      "MinThreads": 12,
+      "MinBaseClockGhz": 3.5,
+      "RequireVirtualization": false
+    },
+    "Gpu": {
+      "MinVramMb": 4096,
+      "RecommendedVramMb": 8192
+    },
+    "Ram": {
+      "MinGb": 32,
+      "RecommendedGb": 64
+    },
+    "Storage": {
+      "MinStorageGb": 512,
+      "RecommendedStorageGb": 2048,
+      "RequireSsd": true
+    }
+  }
+}

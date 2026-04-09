@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PCBuddy.Views.DashboardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:PCBuddy.ViewModels"
+    mc:Ignorable="d"
+    d:DesignHeight="700" d:DesignWidth="900"
+    Background="#FF121812">
+
+    <Page.DataContext>
+        <vm:DashboardViewModel/>
+    </Page.DataContext>
+
+    <ScrollViewer Padding="24">
+        <StackPanel Spacing="24">
+            <TextBlock Text="Dashboard" FontSize="28" FontWeight="SemiBold" Foreground="White"/>
+
+            <TextBlock FontSize="16" Foreground="#B7B9B5">
+                <Run Text="Profile: "/>
+                <Run Text="{Binding CurrentProfile.DisplayName, Mode=OneWay}"/>
+            </TextBlock>
+
+            <ProgressRing IsActive="{Binding IsLoading}" 
+                          Width="50" Height="50"
+                          Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+            <TextBlock Text="Hardware Status" FontSize="18" FontWeight="SemiBold" Foreground="White"
+                       Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- CPU Card -->
+                <Button Grid.Column="0" Grid.Row="0" Margin="0,0,12,12" 
+                        Background="#FF1A2013"
+                        Padding="16"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        BorderThickness="0"
+                        Click="CpuCard_Click">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE950;" FontSize="20" Foreground="White"/>
+                            <TextBlock Text="CPU" FontSize="14" FontWeight="SemiBold" Foreground="#B7B9B5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding CpuName}" FontSize="14" Foreground="White" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        <Border CornerRadius="4" Padding="8,4" Margin="0,8,0,0" HorizontalAlignment="Left"
+                                Background="{Binding CpuStatusColor, Converter={StaticResource StringToBrushConverter}}">
+                            <TextBlock Text="{Binding CpuStatus}" FontSize="12" Foreground="White" FontWeight="SemiBold"/>
+                        </Border>
+                    </StackPanel>
+                </Button>
+
+                <!-- GPU Card -->
+                <Button Grid.Column="1" Grid.Row="0" Margin="12,0,0,12"
+                        Background="#FF1A2013"
+                        Padding="16"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        BorderThickness="0"
+                        Click="GpuCard_Click">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE7F4;" FontSize="20" Foreground="White"/>
+                            <TextBlock Text="GPU" FontSize="14" FontWeight="SemiBold" Foreground="#B7B9B5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding GpuName}" FontSize="14" Foreground="White" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        <Border CornerRadius="4" Padding="8,4" Margin="0,8,0,0" HorizontalAlignment="Left"
+                                Background="{Binding GpuStatusColor, Converter={StaticResource StringToBrushConverter}}">
+                            <TextBlock Text="{Binding GpuStatus}" FontSize="12" Foreground="White" FontWeight="SemiBold"/>
+                        </Border>
+                    </StackPanel>
+                </Button>
+
+                <!-- RAM Card -->
+                <Button Grid.Column="0" Grid.Row="1" Margin="0,12,12,0"
+                        Background="#FF1A2013"
+                        Padding="16"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        BorderThickness="0"
+                        Click="RamCard_Click">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE964;" FontSize="20" Foreground="White"/>
+                            <TextBlock Text="RAM" FontSize="14" FontWeight="SemiBold" Foreground="#B7B9B5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding RamTotal}" FontSize="14" Foreground="White" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        <Border CornerRadius="4" Padding="8,4" Margin="0,8,0,0" HorizontalAlignment="Left"
+                                Background="{Binding RamStatusColor, Converter={StaticResource StringToBrushConverter}}">
+                            <TextBlock Text="{Binding RamStatus}" FontSize="12" Foreground="White" FontWeight="SemiBold"/>
+                        </Border>
+                    </StackPanel>
+                </Button>
+
+                <!-- Storage Card -->
+                <Button Grid.Column="1" Grid.Row="1" Margin="12,12,0,0"
+                        Background="#FF1A2013"
+                        Padding="16"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        BorderThickness="0"
+                        Click="StorageCard_Click">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE8B7;" FontSize="20" Foreground="White"/>
+                            <TextBlock Text="Storage" FontSize="14" FontWeight="SemiBold" Foreground="#B7B9B5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding StorageInfo}" FontSize="14" Foreground="White" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <Border Background="#FF1A2013"
+                    CornerRadius="8" Padding="16"
+                    Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE73E;" FontSize="32" Margin="0,0,12,0" Foreground="#2DB44B"
+                               Visibility="{Binding OverallPass, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <TextBlock Text="&#xE711;" FontSize="32" Margin="0,0,12,0" Foreground="#DC5040"
+                               Visibility="{Binding OverallPass, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="All Good!" FontSize="18" FontWeight="SemiBold" Foreground="White"
+                                   Visibility="{Binding OverallPass, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                        <TextBlock Text="Needs Attention" FontSize="18" FontWeight="SemiBold" Foreground="White"
+                                   Visibility="{Binding OverallPass, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                        <TextBlock Text="{Binding SummaryMessage}" 
+                                   Foreground="#B7B9B5"
+                                   FontSize="14"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

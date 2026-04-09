@@ -1,5 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Newtonsoft.Json;
 using PCBuddy.Models;
@@ -52,9 +53,16 @@ namespace PCBuddy.ViewModels
             var computerInfo = ComputerInfoGetter.GetComputerInfo(SelectedProfile!);
 
             JsonSettingsManager.SaveComputerSettingsToFile(SelectedProfile!, computerInfo);
+
+            var mainWindow = new MainWindow();
+            mainWindow.Activate();
+
+            if (App.Current is App app && app.MainWindow is Window firstRunWindow)
+            {
+                firstRunWindow.Close();
+            }
         }
 
-        //TODO: make resources system from json
         private void SetResources()
         {
             WelcomeText = "Welcome To PCBuddy!";
@@ -63,13 +71,6 @@ namespace PCBuddy.ViewModels
             ApplyProfileButtonText = "Apply Profile";
         }  
 
-        /// <summary>
-        /// Gets the icon and displayName from the Profile enums.
-        /// </summary>
-        /// <remarks>
-        /// To add new profile simply add a new value in <see cref="UserProfileType"/>.
-        /// Add the icon to assets/icons with the enum value in lowercase as the name.
-        /// </remarks>
         private void SetUserProfiles()
         {
             var profileTypes = Enum.GetValues<UserProfileType>();

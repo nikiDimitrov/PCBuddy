@@ -1,7 +1,8 @@
 {
   "profiles": {
     "PCBuddy (Package)": {
-      "commandName": "MsixPackage"
+      "commandName": "MsixPackage",
+      "nativeDebugging": false
     },
     "PCBuddy (Unpackaged)": {
       "commandName": "Project"
