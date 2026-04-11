@@ -9,17 +9,95 @@
     d:DesignHeight="600" d:DesignWidth="800"
     Background="#FF121812">
 
-    <ScrollViewer Padding="24">
-        <StackPanel Spacing="24">
-            <TextBlock Text="Event Log" FontSize="28" FontWeight="SemiBold" Foreground="White"/>
-            <TextBlock Text="View system errors and warnings" 
-                       Foreground="#B7B9B5"/>
-            
-            <TextBlock Text="Coming soon..." 
-                       FontSize="16" 
-                       HorizontalAlignment="Center"
-                       Margin="0,50,0,0"
-                       Foreground="#B7B9B5"/>
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Event Log" FontSize="28" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,8"/>
+        
+        <TextBlock Text="View system errors, warnings, and information events" 
+                   Foreground="#B7B9B5" Grid.Row="1" Margin="0,0,0,16"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12" Margin="0,0,0,16">
+            <ComboBox x:Name="LogSelector" Width="150" SelectedIndex="0" SelectionChanged="LogSelector_SelectionChanged">
+                <ComboBoxItem Content="System"/>
+                <ComboBoxItem Content="Application"/>
+                <ComboBoxItem Content="Errors Only"/>
+            </ComboBox>
+            <Button x:Name="RefreshButton" Content="Refresh" Padding="16,8" Click="RefreshButton_Click"/>
         </StackPanel>
-    </ScrollViewer>
+
+        <Border Grid.Row="3" Background="#1E1E1E" CornerRadius="8" Padding="8">
+            <ListView x:Name="EventListView" Background="Transparent" BorderThickness="0" SelectionChanged="EventListView_SelectionChanged">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="4,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding TimeGenerated}" Foreground="#9E9E9E" FontFamily="Consolas" FontSize="12"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Level}" Foreground="White" FontSize="10" FontWeight="SemiBold" Margin="8,0"/>
+                            <TextBlock Grid.Column="2" Text="{Binding Source}" Foreground="#B7B9B5" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="3" Text="{Binding Message}" Foreground="#E0E0E0" FontSize="12" TextTrimming="CharacterEllipsis">
+                                <ToolTipService.ToolTip>
+                                    <ToolTip Content="{Binding Message}"/>
+                                </ToolTipService.ToolTip>
+                            </TextBlock>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Border>
+
+        <Border x:Name="DetailPanel" Grid.Row="4" Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,8,0,0" Visibility="Collapsed">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Event Details" FontSize="16" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,12"/>
+                <Button Grid.Column="1" Content="✕" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="#9E9E9E" Click="CloseDetail_Click"/>
+
+                <TextBlock Grid.Row="1" Text="Time:" Foreground="#9E9E9E" Margin="0,4"/>
+                <TextBox x:Name="DetailTime" Grid.Row="1" Grid.Column="1" IsReadOnly="True" Background="Transparent" BorderThickness="0" Foreground="White" Margin="0,2" Padding="0"/>
+
+                <TextBlock Grid.Row="2" Text="Level:" Foreground="#9E9E9E" Margin="0,4"/>
+                <TextBox x:Name="DetailLevel" Grid.Row="2" Grid.Column="1" IsReadOnly="True" Background="Transparent" BorderThickness="0" Foreground="White" Margin="0,2" Padding="0"/>
+
+                <TextBlock Grid.Row="3" Text="Source:" Foreground="#9E9E9E" Margin="0,4"/>
+                <TextBox x:Name="DetailSource" Grid.Row="3" Grid.Column="1" IsReadOnly="True" Background="Transparent" BorderThickness="0" Foreground="White" Margin="0,2" Padding="0" TextWrapping="Wrap"/>
+
+                <TextBlock Grid.Row="4" Text="Message:" Foreground="#9E9E9E" Margin="0,4"/>
+                <ScrollViewer Grid.Row="4" Grid.Column="1" MaxHeight="200" VerticalScrollBarVisibility="Auto" Margin="0,4">
+                    <TextBox x:Name="DetailMessage" IsReadOnly="True" Background="Transparent" BorderThickness="0" Foreground="White" Padding="0" TextWrapping="Wrap"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="5" Margin="0,16,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ProgressBar x:Name="LoadingBar" IsIndeterminate="True" Visibility="Collapsed" Height="4"/>
+            <TextBlock x:Name="StatusText" Grid.Row="1" Foreground="#9E9E9E" FontSize="12" Text="Ready"/>
+        </Grid>
+    </Grid>
 </Page>

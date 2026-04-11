@@ -23,9 +23,6 @@ namespace PCBuddy
                     case "Dashboard":
                         ContentFrame.Navigate(typeof(DashboardView));
                         break;
-                    case "Drivers":
-                        ContentFrame.Navigate(typeof(DriversView));
-                        break;
                     case "EventLog":
                         ContentFrame.Navigate(typeof(EventLogView));
                         break;
@@ -39,13 +36,9 @@ namespace PCBuddy
             {
                 NavView.SelectedItem = NavView.MenuItems[0];
             }
-            else if (e.SourcePageType == typeof(DriversView))
-            {
-                NavView.SelectedItem = NavView.MenuItems[1];
-            }
             else if (e.SourcePageType == typeof(EventLogView))
             {
-                NavView.SelectedItem = NavView.MenuItems[2];
+                NavView.SelectedItem = NavView.MenuItems[1];
             }
         }
     }

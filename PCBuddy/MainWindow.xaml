@@ -24,11 +24,6 @@
                     <SymbolIcon Symbol="Home"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Drivers" Tag="Drivers">
-                <NavigationViewItem.Icon>
-                    <SymbolIcon Symbol="Download"/>
-                </NavigationViewItem.Icon>
-            </NavigationViewItem>
             <NavigationViewItem Content="Event Log" Tag="EventLog">
                 <NavigationViewItem.Icon>
                     <SymbolIcon Symbol="Message"/>

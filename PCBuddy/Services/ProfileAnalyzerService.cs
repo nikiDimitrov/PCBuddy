@@ -61,7 +61,9 @@ namespace PCBuddy.Services
             {
                 ComponentName = "CPU Cores",
                 Status = cpu.PhysicalCoreCount >= req.MinCores ? RequirementStatus.Pass : RequirementStatus.Fail,
-                StatusMessage = cpu.PhysicalCoreCount >= req.MinCores ? "Meets requirement" : "Below minimum",
+                StatusMessage = cpu.PhysicalCoreCount >= req.MinCores 
+                    ? $"Great! {cpu.PhysicalCoreCount} cores handles multitasking and parallel workloads efficiently"
+                    : $"Need {req.MinCores}+ cores. More cores help with multitasking, faster rendering, and running multiple apps smoothly",
                 ActualValue = $"{cpu.PhysicalCoreCount} cores",
                 RequiredValue = $"{req.MinCores} cores"
             });
@@ -70,7 +72,9 @@ namespace PCBuddy.Services
             {
                 ComponentName = "CPU Threads",
                 Status = cpu.ThreadCount >= req.MinThreads ? RequirementStatus.Pass : RequirementStatus.Fail,
-                StatusMessage = cpu.ThreadCount >= req.MinThreads ? "Meets requirement" : "Below minimum",
+                StatusMessage = cpu.ThreadCount >= req.MinThreads 
+                    ? $"Excellent! {cpu.ThreadCount} threads provide smooth performance in demanding applications"
+                    : $"Need {req.MinThreads}+ threads. More threads improve performance in video editing, streaming, and background tasks",
                 ActualValue = $"{cpu.ThreadCount} threads",
                 RequiredValue = $"{req.MinThreads} threads"
             });
@@ -79,7 +83,9 @@ namespace PCBuddy.Services
             {
                 ComponentName = "CPU Clock",
                 Status = cpu.BaseClockGhz >= req.MinBaseClockGhz ? RequirementStatus.Pass : RequirementStatus.Fail,
-                StatusMessage = cpu.BaseClockGhz >= req.MinBaseClockGhz ? "Meets requirement" : "Below minimum",
+                StatusMessage = cpu.BaseClockGhz >= req.MinBaseClockGhz 
+                    ? $"Your {cpu.BaseClockGhz:F1} GHz ensures snappy responsiveness"
+                    : $"Need {req.MinBaseClockGhz:F1}+ GHz. Higher clock speeds mean faster single-threaded performance and quicker app launches",
                 ActualValue = $"{cpu.BaseClockGhz:F1} GHz",
                 RequiredValue = $"{req.MinBaseClockGhz:F1} GHz"
             });
@@ -90,7 +96,9 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "Virtualization",
                     Status = cpu.HasVirtualizationEnabled ? RequirementStatus.Pass : RequirementStatus.Fail,
-                    StatusMessage = cpu.HasVirtualizationEnabled ? "Enabled" : "Disabled (required)",
+                    StatusMessage = cpu.HasVirtualizationEnabled 
+                        ? "Virtualization is enabled - you can run virtual machines and Docker containers"
+                        : "Virtualization is disabled. Enable it in BIOS to run virtual machines, Android emulators, or WSL2",
                     ActualValue = cpu.HasVirtualizationEnabled ? "Enabled" : "Disabled",
                     RequiredValue = "Enabled"
                 });
@@ -125,7 +133,7 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "GPU VRAM",
                     Status = RequirementStatus.Pass,
-                    StatusMessage = "Meets recommended",
+                    StatusMessage = $"Excellent! {vramMb} MB handles high-resolution textures and multiple displays without stuttering",
                     ActualValue = $"{vramMb} MB",
                     RequiredValue = $"{req.RecommendedVramMb} MB (recommended)"
                 });
@@ -136,7 +144,7 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "GPU VRAM",
                     Status = RequirementStatus.Warning,
-                    StatusMessage = "Meets minimum, below recommended",
+                    StatusMessage = $"{vramMb} MB works, but {req.RecommendedVramMb} MB would prevent texture pop-in and improve 4K gaming/editing",
                     ActualValue = $"{vramMb} MB",
                     RequiredValue = $"{req.RecommendedVramMb} MB (recommended)"
                 });
@@ -147,7 +155,7 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "GPU VRAM",
                     Status = RequirementStatus.Fail,
-                    StatusMessage = "Below minimum",
+                    StatusMessage = $"Need {req.MinVramMb} MB. VRAM stores textures and frames - low VRAM causes stuttering in games and renders",
                     ActualValue = $"{vramMb} MB",
                     RequiredValue = $"{req.MinVramMb} MB"
                 });
@@ -181,7 +189,7 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "RAM",
                     Status = RequirementStatus.Pass,
-                    StatusMessage = "Meets recommended",
+                    StatusMessage = $"Great! {totalGb} GB lets you run heavy apps smoothly with room for browser tabs and background tasks",
                     ActualValue = $"{totalGb} GB",
                     RequiredValue = $"{req.RecommendedGb} GB (recommended)"
                 });
@@ -192,7 +200,7 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "RAM",
                     Status = RequirementStatus.Warning,
-                    StatusMessage = "Meets minimum, below recommended",
+                    StatusMessage = $"{totalGb} GB is enough, but {req.RecommendedGb} GB would prevent slowdowns when multitasking",
                     ActualValue = $"{totalGb} GB",
                     RequiredValue = $"{req.RecommendedGb} GB (recommended)"
                 });
@@ -203,7 +211,7 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "RAM",
                     Status = RequirementStatus.Fail,
-                    StatusMessage = "Below minimum",
+                    StatusMessage = $"Need {req.MinGb} GB. RAM is your system's workspace - low RAM causes freezing and slow performance",
                     ActualValue = $"{totalGb} GB",
                     RequiredValue = $"{req.MinGb} GB"
                 });
@@ -230,8 +238,49 @@ namespace PCBuddy.Services
             }
 
             var totalGb = disks.Sum(d => d.CapacityMB) / 1024;
-            var hasSsd = disks.Any(d => d.Interface?.ToLower().Contains("nvme") == true || 
-                                         d.Interface?.ToLower().Contains("ssd") == true);
+            var hasSsd = disks.Any(d => 
+                d.Interface?.ToLower().Contains("nvme") == true || 
+                d.Interface?.ToLower().Contains("ssd") == true ||
+                d.ModelName?.ToLower().Contains("nvme") == true ||
+                d.ModelName?.ToLower().Contains("ssd") == true ||
+                d.ModelName?.ToLower().Contains("solid state") == true ||
+                d.ModelName?.ToLower().Contains("pc711") == true ||
+                d.ModelName?.ToLower().Contains("pm9") == true ||
+                d.ModelName?.ToLower().Contains("rzvls") == true ||
+                (d.ModelName?.ToLower().Contains("samsung") == true && d.ModelName?.ToLower().Contains("disk") != true) ||
+                (d.ModelName?.ToLower().Contains("wd") == true && (d.ModelName?.ToLower().Contains("sn") == true || d.ModelName?.ToLower().Contains("blue") == true)) ||
+                d.ModelName?.ToLower().Contains("crucial p") == true ||
+                d.ModelName?.ToLower().Contains("kingston a") == true ||
+                d.ModelName?.ToLower().Contains("adata xpg") == true ||
+                d.ModelName?.ToLower().Contains("teamgroup mp") == true
+            );
+
+            var ssdGb = disks.Where(d => 
+                d.Interface?.ToLower().Contains("nvme") == true || 
+                d.Interface?.ToLower().Contains("ssd") == true ||
+                d.ModelName?.ToLower().Contains("nvme") == true ||
+                d.ModelName?.ToLower().Contains("ssd") == true ||
+                d.ModelName?.ToLower().Contains("solid state") == true ||
+                d.ModelName?.ToLower().Contains("pc711") == true ||
+                d.ModelName?.ToLower().Contains("pm9") == true ||
+                d.ModelName?.ToLower().Contains("rzvls") == true ||
+                (d.ModelName?.ToLower().Contains("samsung") == true && d.ModelName?.ToLower().Contains("disk") != true) ||
+                (d.ModelName?.ToLower().Contains("wd") == true && (d.ModelName?.ToLower().Contains("sn") == true || d.ModelName?.ToLower().Contains("blue") == true)) ||
+                d.ModelName?.ToLower().Contains("crucial p") == true ||
+                d.ModelName?.ToLower().Contains("kingston a") == true ||
+                d.ModelName?.ToLower().Contains("adata xpg") == true ||
+                d.ModelName?.ToLower().Contains("teamgroup mp") == true
+            ).Sum(d => d.CapacityMB) / 1024;
+
+            var storageNote = "";
+            if (hasSsd && ssdGb > 0 && ssdGb < totalGb)
+            {
+                storageNote = $" ({ssdGb} GB SSD + {totalGb - ssdGb} GB HDD)";
+            }
+            else if (hasSsd)
+            {
+                storageNote = " (SSD)";
+            }
 
             if (totalGb >= req.RecommendedStorageGb && (!req.RequireSsd || hasSsd))
             {
@@ -239,23 +288,29 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "Storage",
                     Status = RequirementStatus.Pass,
-                    StatusMessage = "Meets recommended",
-                    ActualValue = $"{totalGb} GB{(hasSsd ? " (SSD)" : "")}",
+                    StatusMessage = $"Great! {totalGb} GB{storageNote} provides fast load times and ample space for your projects",
+                    ActualValue = $"{totalGb} GB{storageNote}",
                     RequiredValue = $"{req.RecommendedStorageGb} GB (recommended)"
                 });
             }
             else if (totalGb >= req.MinStorageGb)
             {
-                var message = "Meets minimum";
+                var message = "";
                 if (req.RequireSsd && !hasSsd)
-                    message += ", no SSD detected";
+                {
+                    message = $"{totalGb} GB is enough storage, but an SSD is recommended for fast load times and responsiveness";
+                }
+                else
+                {
+                    message = $"{totalGb} GB is enough, but {req.RecommendedStorageGb} GB gives you breathing room for large files";
+                }
 
                 results.Add(new ComponentMatchResult
                 {
                     ComponentName = "Storage",
                     Status = req.RequireSsd && !hasSsd ? RequirementStatus.Warning : RequirementStatus.Pass,
                     StatusMessage = message,
-                    ActualValue = $"{totalGb} GB{(hasSsd ? " (SSD)" : "")}",
+                    ActualValue = $"{totalGb} GB{storageNote}",
                     RequiredValue = $"{req.RecommendedStorageGb} GB (recommended)"
                 });
             }
@@ -265,8 +320,8 @@ namespace PCBuddy.Services
                 {
                     ComponentName = "Storage",
                     Status = RequirementStatus.Fail,
-                    StatusMessage = "Below minimum",
-                    ActualValue = $"{totalGb} GB",
+                    StatusMessage = $"Need {req.MinStorageGb} GB. Storage holds your OS, apps, and files - low space slows everything down",
+                    ActualValue = $"{totalGb} GB{storageNote}",
                     RequiredValue = $"{req.MinStorageGb} GB"
                 });
             }

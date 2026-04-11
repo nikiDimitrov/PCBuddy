@@ -8,8 +8,6 @@ namespace PCBuddy.Models.ComputerInfo
 
         public int VideoMemory { get; set; }
 
-        public Driver Driver { get; set; }
-
         public bool IsMobileVariant { get; set; }
     }
 }

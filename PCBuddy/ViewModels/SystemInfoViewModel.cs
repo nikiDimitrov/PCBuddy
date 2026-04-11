@@ -121,7 +121,8 @@ namespace PCBuddy.ViewModels
                         RequirementStatus.Fail => "✗",
                         _ => ""
                     };
-                    Details.Add(new PartDetailItem(result.ComponentName, $"{statusIcon} {result.StatusMessage}"));
+                    var requirement = result.Status == RequirementStatus.Pass ? $" (need {result.RequiredValue})" : "";
+                    Details.Add(new PartDetailItem(result.ComponentName, $"{statusIcon} {result.StatusMessage}{requirement}"));
                 }
             }
         }
@@ -136,10 +137,6 @@ namespace PCBuddy.ViewModels
                 Details.Add(new PartDetailItem("Name", $"{gpu.Manufacturer} {gpu.ModelName}"));
                 Details.Add(new PartDetailItem("Type", gpu.AdapterType.ToString()));
                 Details.Add(new PartDetailItem("VRAM", $"{gpu.VideoMemory} MB"));
-                if (gpu.Driver != null)
-                {
-                    Details.Add(new PartDetailItem("Driver Version", gpu.Driver.Version));
-                }
             }
 
             if (InspectionResult?.GpuResult != null)
@@ -155,7 +152,8 @@ namespace PCBuddy.ViewModels
                         RequirementStatus.Fail => "✗",
                         _ => ""
                     };
-                    Details.Add(new PartDetailItem(result.ComponentName, $"{statusIcon} {result.StatusMessage}"));
+                    var requirement = result.Status == RequirementStatus.Pass ? $" (need {result.RequiredValue})" : "";
+                    Details.Add(new PartDetailItem(result.ComponentName, $"{statusIcon} {result.StatusMessage}{requirement}"));
                 }
             }
         }
@@ -194,7 +192,8 @@ namespace PCBuddy.ViewModels
                         RequirementStatus.Fail => "✗",
                         _ => ""
                     };
-                    Details.Add(new PartDetailItem(result.ComponentName, $"{statusIcon} {result.StatusMessage}"));
+                    var requirement = result.Status == RequirementStatus.Pass ? $" (need {result.RequiredValue})" : "";
+                    Details.Add(new PartDetailItem(result.ComponentName, $"{statusIcon} {result.StatusMessage}{requirement}"));
                 }
             }
         }
@@ -211,6 +210,24 @@ namespace PCBuddy.ViewModels
                 Details.Add(new PartDetailItem("Capacity", $"{disk.CapacityMB / 1024} GB"));
                 Details.Add(new PartDetailItem("Free Space", $"{disk.FreeSpaceMB / 1024} GB"));
                 Details.Add(new PartDetailItem("Firmware", disk.FirmwareRevision));
+            }
+
+            if (InspectionResult?.StorageResult != null)
+            {
+                Details.Add(new PartDetailItem("", ""));
+                Details.Add(new PartDetailItem("Requirements", "", isHeader: true));
+                foreach (var result in InspectionResult.StorageResult)
+                {
+                    var statusIcon = result.Status switch
+                    {
+                        RequirementStatus.Pass => "✓",
+                        RequirementStatus.Warning => "⚠",
+                        RequirementStatus.Fail => "✗",
+                        _ => ""
+                    };
+                    var requirement = result.Status == RequirementStatus.Pass ? $" (need {result.RequiredValue})" : "";
+                    Details.Add(new PartDetailItem(result.ComponentName, $"{statusIcon} {result.StatusMessage}{requirement}"));
+                }
             }
         }
     }

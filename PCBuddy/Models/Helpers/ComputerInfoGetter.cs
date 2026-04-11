@@ -115,13 +115,6 @@ namespace PCBuddy.Models.Helpers
 
                     AdapterType = DetectAdapterType(name, manufacturer),
 
-                    Driver = new Driver
-                    {
-                        Provider = obj["AdapterCompatibility"]?.ToString(),
-                        Version = obj["DriverVersion"]?.ToString(),
-                        Date = ParseManagementDate(obj["DriverDate"])
-                    },
-
                     IsMobileVariant =
                         name.Contains("Mobile", StringComparison.OrdinalIgnoreCase) ||
                         name.Contains("Laptop", StringComparison.OrdinalIgnoreCase)
