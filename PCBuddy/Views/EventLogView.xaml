@@ -28,8 +28,14 @@
             <ComboBox x:Name="LogSelector" Width="150" SelectedIndex="0" SelectionChanged="LogSelector_SelectionChanged">
                 <ComboBoxItem Content="System"/>
                 <ComboBoxItem Content="Application"/>
-                <ComboBoxItem Content="Errors Only"/>
             </ComboBox>
+            <ComboBox x:Name="LevelFilter" Width="100" SelectedIndex="0" SelectionChanged="Filter_Changed">
+                <ComboBoxItem Content="All Levels"/>
+                <ComboBoxItem Content="Error"/>
+                <ComboBoxItem Content="Warning"/>
+                <ComboBoxItem Content="Info"/>
+            </ComboBox>
+            <TextBox x:Name="SearchBox" Width="200" PlaceholderText="Search..." TextChanged="SearchBox_TextChanged"/>
             <Button x:Name="RefreshButton" Content="Refresh" Padding="16,8" Click="RefreshButton_Click"/>
         </StackPanel>
 

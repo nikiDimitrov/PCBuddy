@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using PCBuddy.Services;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,16 +11,66 @@ namespace PCBuddy.Views
 {
     public sealed partial class EventLogView : Page
     {
-        private ObservableCollection<EventLogEntry> _events = new();
+        private ObservableCollection<EventLogEntry> _allEvents = new();
+        private ObservableCollection<EventLogEntry> _filteredEvents = new();
         private CancellationTokenSource? _cts;
         private int _loadVersion = 0;
 
         public EventLogView()
         {
             InitializeComponent();
-            EventListView.ItemsSource = _events;
+            EventListView.ItemsSource = _filteredEvents;
             RefreshButton.Click += RefreshButton_Click;
             _ = LoadEventsAsync("System");
+        }
+
+        private void ApplyFilters()
+        {
+            var levelFilter = LevelFilter.SelectedIndex switch
+            {
+                1 => "Error",
+                2 => "Warning",
+                3 => "Info",
+                _ => null
+            };
+            var searchText = SearchBox.Text?.ToLower() ?? "";
+
+            _filteredEvents.Clear();
+
+            var filtered = _allEvents.AsEnumerable();
+            if (!string.IsNullOrEmpty(levelFilter))
+            {
+                filtered = filtered.Where(e => e.Level == levelFilter);
+            }
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                filtered = filtered.Where(e => 
+                    e.Source.ToLower().Contains(searchText) || 
+                    e.Message.ToLower().Contains(searchText));
+            }
+
+            foreach (var entry in filtered)
+            {
+                _filteredEvents.Add(entry);
+            }
+
+            UpdateStatus();
+        }
+
+        private void Filter_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (_allEvents.Count > 0)
+            {
+                ApplyFilters();
+            }
+        }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_allEvents.Count > 0)
+            {
+                ApplyFilters();
+            }
         }
 
         private void EventListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -45,7 +96,6 @@ namespace PCBuddy.Views
             var selectedLog = LogSelector.SelectedIndex switch
             {
                 1 => "Application",
-                2 => "Errors",
                 _ => "System"
             };
             await LoadEventsAsync(selectedLog);
@@ -58,11 +108,21 @@ namespace PCBuddy.Views
                 var selectedLog = item.Content?.ToString() switch
                 {
                     "Application" => "Application",
-                    "Errors Only" => "Errors",
                     _ => "System"
                 };
                 await LoadEventsAsync(selectedLog);
             }
+        }
+
+        private void UpdateStatus()
+        {
+            int errors = _filteredEvents.Count(e => e.Level == "Error");
+            int warnings = _filteredEvents.Count(e => e.Level == "Warning");
+            int showing = _filteredEvents.Count;
+            int total = _allEvents.Count;
+            StatusText.Text = showing == total 
+                ? $"Showing {showing} events ({errors} errors, {warnings} warnings)"
+                : $"Showing {showing} of {total} events ({errors} errors, {warnings} warnings)";
         }
 
         private async Task LoadEventsAsync(string logType)
@@ -75,14 +135,14 @@ namespace PCBuddy.Views
             LoadingBar.Visibility = Visibility.Visible;
             StatusText.Text = "Loading events...";
             RefreshButton.IsEnabled = false;
-            _events.Clear();
+            _allEvents.Clear();
+            _filteredEvents.Clear();
 
             try
             {
                 var entries = logType switch
                 {
                     "Application" => await EventLogService.GetApplicationEventsAsync(1000, token),
-                    "Errors" => await EventLogService.GetErrorEventsAsync(1000, token),
                     _ => await EventLogService.GetSystemEventsAsync("System", 1000, token)
                 };
 
@@ -91,17 +151,10 @@ namespace PCBuddy.Views
                 foreach (var entry in entries)
                 {
                     if (currentVersion != _loadVersion) return;
-                    _events.Add(entry);
+                    _allEvents.Add(entry);
                 }
 
-                int errors = 0, warnings = 0;
-                foreach (var entry in _events)
-                {
-                    if (entry.Level == "Error") errors++;
-                    else if (entry.Level == "Warning") warnings++;
-                }
-
-                StatusText.Text = $"Loaded {_events.Count} events ({errors} errors, {warnings} warnings)";
+                ApplyFilters();
             }
             catch (OperationCanceledException)
             {

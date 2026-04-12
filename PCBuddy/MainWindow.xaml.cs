@@ -26,6 +26,9 @@ namespace PCBuddy
                     case "EventLog":
                         ContentFrame.Navigate(typeof(EventLogView));
                         break;
+                    case "Performance":
+                        ContentFrame.Navigate(typeof(PerformanceMonitorView));
+                        break;
                 }
             }
         }
@@ -39,6 +42,10 @@ namespace PCBuddy
             else if (e.SourcePageType == typeof(EventLogView))
             {
                 NavView.SelectedItem = NavView.MenuItems[1];
+            }
+            else if (e.SourcePageType == typeof(PerformanceMonitorView))
+            {
+                NavView.SelectedItem = NavView.MenuItems[2];
             }
         }
     }

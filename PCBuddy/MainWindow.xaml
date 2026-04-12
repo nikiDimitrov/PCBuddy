@@ -29,6 +29,11 @@
                     <SymbolIcon Symbol="Message"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
+            <NavigationViewItem Content="Performance" Tag="Performance">
+                <NavigationViewItem.Icon>
+                    <SymbolIcon Symbol="AllApps"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
         </NavigationView.MenuItems>
         
         <Frame x:Name="ContentFrame" Navigated="ContentFrame_Navigated"/>
