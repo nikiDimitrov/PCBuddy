@@ -10,6 +10,7 @@ using PCBuddy.Models.Settings;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
 using static PCBuddy.PCBuddyConsts;
 
 namespace PCBuddy.ViewModels
@@ -48,9 +49,9 @@ namespace PCBuddy.ViewModels
         }
 
         [RelayCommand]
-        private void ApplyProfile()
+        private async Task ApplyProfile()
         {
-            var computerInfo = ComputerInfoGetter.GetComputerInfo(SelectedProfile!);
+            var computerInfo = await Task.Run(() => ComputerInfoGetter.GetComputerInfo(SelectedProfile!));
 
             JsonSettingsManager.SaveComputerSettingsToFile(SelectedProfile!, computerInfo);
 

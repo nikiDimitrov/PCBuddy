@@ -4,22 +4,39 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using PCBuddy.Services;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.UI;
+using Windows.UI.Text;
 
 namespace PCBuddy.Views
 {
+    public class GpuGraphData
+    {
+        public string Name { get; set; } = "";
+        public Canvas GraphCanvas { get; set; } = new Canvas { Height = 80, Background = new SolidColorBrush(Color.FromArgb(255, 37, 37, 37)) };
+    }
+
     public sealed partial class PerformanceMonitorView : Page
     {
         private CancellationTokenSource? _cts;
         private bool _isMonitoring = false;
         private MetricHistory _history = new();
         private readonly object _lock = new();
+        private List<GpuGraphData> _gpuGraphs = new();
 
         public PerformanceMonitorView()
         {
             InitializeComponent();
+            CpuGraph.SizeChanged += Graph_SizeChanged;
+            RamGraph.SizeChanged += Graph_SizeChanged;
+            DiskGraph.SizeChanged += Graph_SizeChanged;
+        }
+
+        private void Graph_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            DrawGraphs();
         }
 
         private void StartStopButton_Click(object sender, RoutedEventArgs e)
@@ -47,7 +64,7 @@ namespace PCBuddy.Views
             
             try
             {
-                await PerformanceMonitorService.StartMonitoringAsync(OnMetricsUpdate, 25, _cts.Token);
+                await PerformanceMonitorService.StartMonitoringAsync(OnMetricsUpdate, 50, _cts.Token);
             }
             catch (Exception ex)
             {
@@ -103,9 +120,53 @@ namespace PCBuddy.Views
             if (DiskPercentText != null) DiskPercentText.Text = $"{metrics.DiskUsage:F0}%";
             if (DiskUsedText != null) DiskUsedText.Text = $"Total: {metrics.DiskUsage:F0}%";
             
-            if (GpuListPanel != null && metrics.GpuList != null && metrics.GpuList.Count > 0)
+            if (metrics.GpuList != null && metrics.GpuList.Count > 0)
             {
-                GpuListPanel.ItemsSource = metrics.GpuList;
+                while (_gpuGraphs.Count < metrics.GpuList.Count)
+                {
+                    var gpuIdx = _gpuGraphs.Count;
+                    var gpuData = new GpuGraphData { Name = metrics.GpuList[gpuIdx].Name };
+                    _gpuGraphs.Add(gpuData);
+                    
+                    var listContainer = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
+                    listContainer.Children.Add(new TextBlock 
+                    { 
+                        Text = metrics.GpuList[gpuIdx].Name, 
+                        Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)), 
+                        FontSize = 12, 
+                        TextWrapping = TextWrapping.Wrap 
+                    });
+                    listContainer.Children.Add(new TextBlock 
+                    { 
+                        Text = metrics.GpuList[gpuIdx].Usage, 
+                        Foreground = new SolidColorBrush(Color.FromArgb(255, 186, 104, 200)), 
+                        FontSize = 12, 
+                        FontWeight = new FontWeight { Weight = 700 } 
+                    });
+                    GpuListPanel.Children.Add(listContainer);
+                    
+                    var graphContainer = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
+                    graphContainer.Children.Add(new TextBlock 
+                    { 
+                        Text = metrics.GpuList[gpuIdx].Name, 
+                        Foreground = new SolidColorBrush(Color.FromArgb(255, 186, 104, 200)), 
+                        FontSize = 12, 
+                        Margin = new Thickness(0, 0, 0, 4) 
+                    });
+                    var grid = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
+                    gpuData.GraphCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    gpuData.GraphCanvas.VerticalAlignment = VerticalAlignment.Top;
+                    grid.Children.Add(gpuData.GraphCanvas);
+                    gpuData.GraphCanvas.Height = 80;
+                    gpuData.GraphCanvas.SizeChanged += Graph_SizeChanged;
+                    graphContainer.Children.Add(grid);
+                    GpuGraphsPanel.Children.Add(graphContainer);
+                }
+                
+                for (int i = 0; i < metrics.GpuList.Count; i++)
+                {
+                    _gpuGraphs[i].Name = metrics.GpuList[i].Name;
+                }
             }
             
             if (NetworkDownText != null) NetworkDownText.Text = $"{metrics.NetworkReceived:F1} MB/s";
@@ -147,6 +208,11 @@ namespace PCBuddy.Views
                 DrawGraph(CpuGraph, _history.CpuHistory, "#4FC3F7");
                 DrawGraph(RamGraph, _history.RamHistory, "#81C784");
                 DrawGraph(DiskGraph, _history.DiskHistory, "#FFB74D");
+                
+                for (int i = 0; i < _gpuGraphs.Count && i < _history.GpuHistories.Count; i++)
+                {
+                    DrawGraph(_gpuGraphs[i].GraphCanvas, _history.GpuHistories[i], "#BA68C8");
+                }
             }
         }
 
@@ -177,19 +243,18 @@ namespace PCBuddy.Views
             var polyline = new Polyline
             {
                 Stroke = brush,
-                StrokeThickness = 2
+                StrokeThickness = 2,
+                Clip = null
             };
 
             double xStep = width / Math.Max(data.Count - 1, 1);
 
             for (int i = 0; i < data.Count; i++)
             {
-                var x = i * xStep;
-                var y = height - (data[i] / 100.0 * height);
+                var x = Math.Min(i * xStep, width);
+                var y = Math.Max(0, Math.Min(height - (data[i] / 100.0 * height), height));
                 polyline.Points.Add(new Windows.Foundation.Point(x, y));
             }
-
-            canvas.Children.Add(polyline);
 
             var area = new Polyline
             {
@@ -203,9 +268,10 @@ namespace PCBuddy.Views
             {
                 area.Points.Add(point);
             }
-            area.Points.Add(new Windows.Foundation.Point((data.Count - 1) * xStep, height));
+            area.Points.Add(new Windows.Foundation.Point(width, height));
 
-            canvas.Children.Insert(0, area);
+            canvas.Children.Add(area);
+            canvas.Children.Add(polyline);
 
             var gridLine = new Line
             {
@@ -229,6 +295,15 @@ namespace PCBuddy.Views
                 StrokeThickness = 1
             };
             canvas.Children.Add(valueLine);
+            
+            var border = new Border
+            {
+                BorderBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)),
+                BorderThickness = new Thickness(1),
+                Width = width,
+                Height = height
+            };
+            canvas.Children.Add(border);
         }
 
         protected override void OnNavigatedFrom(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)

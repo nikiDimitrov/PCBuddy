@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,6 +34,7 @@ namespace PCBuddy.Services
         public List<double> RamHistory { get; set; } = new();
         public List<double> DiskHistory { get; set; } = new();
         public List<double> GpuHistory { get; set; } = new();
+        public List<List<double>> GpuHistories { get; set; } = new();
         
         public int MaxPoints { get; set; } = 60;
         
@@ -43,12 +45,29 @@ namespace PCBuddy.Services
             DiskHistory.Add(metric.DiskUsage);
             GpuHistory.Add(metric.GpuUsage);
             
+            while (GpuHistories.Count < metric.GpuList.Count)
+            {
+                GpuHistories.Add(new List<double>());
+            }
+            
+            for (int i = 0; i < metric.GpuList.Count; i++)
+            {
+                if (i < GpuHistories.Count)
+                {
+                    GpuHistories[i].Add(metric.GpuList[i].UsageValue);
+                }
+            }
+            
             if (CpuHistory.Count > MaxPoints)
             {
                 CpuHistory.RemoveAt(0);
                 RamHistory.RemoveAt(0);
                 DiskHistory.RemoveAt(0);
                 GpuHistory.RemoveAt(0);
+                foreach (var gh in GpuHistories)
+                {
+                    if (gh.Count > 0) gh.RemoveAt(0);
+                }
             }
         }
         
@@ -58,6 +77,10 @@ namespace PCBuddy.Services
             RamHistory.Clear();
             DiskHistory.Clear();
             GpuHistory.Clear();
+            foreach (var gh in GpuHistories)
+            {
+                gh.Clear();
+            }
         }
     }
 
@@ -78,51 +101,44 @@ namespace PCBuddy.Services
 
                 try
                 {
-                    var script = @"
-                        $cpu=(Get-CimInstance Win32_Processor).LoadPercentage
-                        $os=Get-CimInstance Win32_OperatingSystem
-                        $ram=[math]::Round((($os.TotalVisibleMemorySize-$os.FreePhysicalMemory)/$os.TotalVisibleMemorySize)*100,1)
-                        $d=Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | Select-Object -First 1
-                        $disk=if($d.Size){[math]::Round((($d.Size-$d.FreeSpace)/$d.Size)*100,1)}else{0}
-                        $n=Get-CimInstance Win32_PerfFormattedData_Tcpip_NetworkInterface -EA SilentlyContinue | Select-Object -First 1
-                        $net=if($n){[math]::Round($n.BytesReceivedPersec/1MB,2)}else{0}
-                        $gpuNames=(Get-CimInstance Win32_VideoController).Name
-                        $gpuResults=@()
-                        foreach($gpu in $gpuNames) {
-                            $usage=0
-                            try {
-                                $counter=Get-Counter ""\GPU Engine(*engtype_3D)"" -EA Stop
-                                $usage=[math]::Round(($counter.CounterSamples | Measure-Object -Property CookedValue -Maximum).Maximum,0)
-                            } catch { $usage=0 }
-                            $gpuResults+=$gpu + '|||' + $usage
-                        }
-                        $gpuResultsStr=$gpuResults -join '|||GPU|||'
-                        ""$cpu|$ram|$disk|$net|$gpuResultsStr""
-                    ";
+                    var script = @"(Get-CimInstance Win32_Processor -Property LoadPercentage).LoadPercentage;$os=Get-CimInstance Win32_OperatingSystem -Property TotalVisibleMemorySize,FreePhysicalMemory;([math]::Round((($os.TotalVisibleMemorySize-$os.FreePhysicalMemory)/$os.TotalVisibleMemorySize)*100,1));(Get-CimInstance Win32_PerfFormattedData_Tcpip_NetworkInterface -Property BytesReceivedPersec -MaxResultCount 1).BytesReceivedPersec/1MB";
                     var result = RunPowerShell(script);
-                    var parts = result.Trim().Split(new[] { '|' }, 5);
-                    if (parts.Length >= 4)
+                    var lines = result.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (lines.Length >= 1 && double.TryParse(lines[0].Trim(), out var cpu)) metrics.CpuUsage = cpu;
+                    if (lines.Length >= 2 && double.TryParse(lines[1].Trim(), out var ram)) metrics.RamUsage = ram;
+                    if (lines.Length >= 3 && double.TryParse(lines[2].Trim(), out var net)) metrics.NetworkReceived = net;
+                    
+                    var diskScript = @"$d=Get-CimInstance Win32_LogicalDisk -Property Size,FreeSpace -Filter 'DriveType=3';if($d.Size){$t=($d|Measure-Object -Property Size -Sum).Sum;$f=($d|Measure-Object -Property FreeSpace -Sum).Sum;if($t){[math]::Round((($t-$f)/$t)*100,1)}}else{0}";
+                    var diskResult = RunPowerShell(diskScript);
+                    if (double.TryParse(diskResult.Trim(), out var disk)) metrics.DiskUsage = disk;
+                    
+                    var gpuScript = @"(Get-CimInstance Win32_VideoController -Property Name).Name";
+                    var gpuResult = RunPowerShell(gpuScript);
+                    var gpuLines = gpuResult.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    
+                    var allGpuUtilsScript = @"(Get-Counter '\GPU Engine(*engtype_3D)' -EA SilentlyContinue | Select-Object -ExpandProperty CounterSamples | ForEach-Object { $_.CookedValue })";
+                    var allGpuUtilsResult = RunPowerShell(allGpuUtilsScript);
+                    var allGpuUtils = allGpuUtilsResult.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(s => { double.TryParse(s.Trim(), out var v); return v; })
+                        .Where(v => v > 0)
+                        .ToList();
+                    
+                    int gpuIndex = 0;
+                    foreach (var gpuName in gpuLines)
                     {
-                        if (double.TryParse(parts[0], out var cpu)) metrics.CpuUsage = cpu;
-                        if (double.TryParse(parts[1], out var ram)) metrics.RamUsage = ram;
-                        if (double.TryParse(parts[2], out var disk)) metrics.DiskUsage = disk;
-                        if (double.TryParse(parts[3], out var net)) metrics.NetworkReceived = net;
-                        
-                        if (parts.Length > 4 && !string.IsNullOrEmpty(parts[4]))
+                        var name = gpuName.Trim();
+                        if (!string.IsNullOrEmpty(name) && !name.Contains("Microsoft Basic"))
                         {
-                            var gpuEntries = parts[4].Split(new[] { "|||GPU|||" }, StringSplitOptions.RemoveEmptyEntries);
-                            foreach (var entry in gpuEntries)
+                            double usage = 0;
+                            if (allGpuUtils.Count > 0)
                             {
-                                var gpuParts = entry.Split(new[] { "|||" }, StringSplitOptions.None);
-                                if (gpuParts.Length >= 2)
-                                {
-                                    var name = gpuParts[0].Trim();
-                                    if (double.TryParse(gpuParts[1], out var usage))
-                                    {
-                                        metrics.GpuList.Add(new GpuInfo { Name = name, Usage = $"{usage}%", UsageValue = usage });
-                                    }
-                                }
+                                if (gpuIndex < allGpuUtils.Count)
+                                    usage = allGpuUtils[gpuIndex];
+                                else
+                                    usage = allGpuUtils[0];
                             }
+                            metrics.GpuList.Add(new GpuInfo { Name = name, Usage = $"{usage}%", UsageValue = usage });
+                            gpuIndex++;
                         }
                     }
                 }
