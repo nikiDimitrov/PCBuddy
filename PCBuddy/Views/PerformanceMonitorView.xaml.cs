@@ -16,6 +16,7 @@ namespace PCBuddy.Views
     {
         public string Name { get; set; } = "";
         public Canvas GraphCanvas { get; set; } = new Canvas { Height = 80, Background = new SolidColorBrush(Color.FromArgb(255, 37, 37, 37)) };
+        public TextBlock? UsageText { get; set; }
     }
 
     public sealed partial class PerformanceMonitorView : Page
@@ -64,7 +65,7 @@ namespace PCBuddy.Views
             
             try
             {
-                await PerformanceMonitorService.StartMonitoringAsync(OnMetricsUpdate, 50, _cts.Token);
+                await PerformanceMonitorService.StartMonitoringAsync(OnMetricsUpdate, 0, _cts.Token);
             }
             catch (Exception ex)
             {
@@ -129,20 +130,23 @@ namespace PCBuddy.Views
                     _gpuGraphs.Add(gpuData);
                     
                     var listContainer = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
-                    listContainer.Children.Add(new TextBlock 
+                    var nameText = new TextBlock 
                     { 
                         Text = metrics.GpuList[gpuIdx].Name, 
                         Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)), 
                         FontSize = 12, 
                         TextWrapping = TextWrapping.Wrap 
-                    });
-                    listContainer.Children.Add(new TextBlock 
+                    };
+                    var usageText = new TextBlock 
                     { 
                         Text = metrics.GpuList[gpuIdx].Usage, 
                         Foreground = new SolidColorBrush(Color.FromArgb(255, 186, 104, 200)), 
                         FontSize = 12, 
                         FontWeight = new FontWeight { Weight = 700 } 
-                    });
+                    };
+                    gpuData.UsageText = usageText;
+                    listContainer.Children.Add(nameText);
+                    listContainer.Children.Add(usageText);
                     GpuListPanel.Children.Add(listContainer);
                     
                     var graphContainer = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
@@ -166,6 +170,10 @@ namespace PCBuddy.Views
                 for (int i = 0; i < metrics.GpuList.Count; i++)
                 {
                     _gpuGraphs[i].Name = metrics.GpuList[i].Name;
+                    if (_gpuGraphs[i].UsageText != null)
+                    {
+                        _gpuGraphs[i].UsageText.Text = metrics.GpuList[i].Usage;
+                    }
                 }
             }
             

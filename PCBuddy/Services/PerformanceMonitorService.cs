@@ -90,65 +90,123 @@ namespace PCBuddy.Services
         private static long _lastBytesSent = 0;
         private static long _lastBytesReceived = 0;
 
-        public static async Task<SystemMetrics> GetCurrentMetricsAsync()
-        {
-            return await Task.Run(() =>
-            {
-                var metrics = new SystemMetrics
-                {
-                    Timestamp = DateTime.Now
-                };
+        private static List<string> _cachedGpuNames = new();
+        private static List<bool> _cachedGpuIsNvidia = new();
+        private static bool _gpuCacheInitialized = false;
+        private static readonly object _gpuCacheLock = new();
 
-                try
+        public static void InitializeGpuCache()
+        {
+            lock (_gpuCacheLock)
+            {
+                if (_gpuCacheInitialized) return;
+                
+                var gpuScript = @"(Get-CimInstance Win32_VideoController -Property Name).Name";
+                var result = RunPowerShell(gpuScript);
+                var lines = result.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                _cachedGpuNames.Clear();
+                _cachedGpuIsNvidia.Clear();
+                
+                foreach (var name in lines)
                 {
-                    var script = @"(Get-CimInstance Win32_Processor -Property LoadPercentage).LoadPercentage;$os=Get-CimInstance Win32_OperatingSystem -Property TotalVisibleMemorySize,FreePhysicalMemory;([math]::Round((($os.TotalVisibleMemorySize-$os.FreePhysicalMemory)/$os.TotalVisibleMemorySize)*100,1));(Get-CimInstance Win32_PerfFormattedData_Tcpip_NetworkInterface -Property BytesReceivedPersec -MaxResultCount 1).BytesReceivedPersec/1MB";
-                    var result = RunPowerShell(script);
-                    var lines = result.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (lines.Length >= 1 && double.TryParse(lines[0].Trim(), out var cpu)) metrics.CpuUsage = cpu;
-                    if (lines.Length >= 2 && double.TryParse(lines[1].Trim(), out var ram)) metrics.RamUsage = ram;
-                    if (lines.Length >= 3 && double.TryParse(lines[2].Trim(), out var net)) metrics.NetworkReceived = net;
-                    
-                    var diskScript = @"$d=Get-CimInstance Win32_LogicalDisk -Property Size,FreeSpace -Filter 'DriveType=3';if($d.Size){$t=($d|Measure-Object -Property Size -Sum).Sum;$f=($d|Measure-Object -Property FreeSpace -Sum).Sum;if($t){[math]::Round((($t-$f)/$t)*100,1)}}else{0}";
-                    var diskResult = RunPowerShell(diskScript);
-                    if (double.TryParse(diskResult.Trim(), out var disk)) metrics.DiskUsage = disk;
-                    
-                    var gpuScript = @"(Get-CimInstance Win32_VideoController -Property Name).Name";
-                    var gpuResult = RunPowerShell(gpuScript);
-                    var gpuLines = gpuResult.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                    
-                    var allGpuUtilsScript = @"(Get-Counter '\GPU Engine(*engtype_3D)' -EA SilentlyContinue | Select-Object -ExpandProperty CounterSamples | ForEach-Object { $_.CookedValue })";
-                    var allGpuUtilsResult = RunPowerShell(allGpuUtilsScript);
-                    var allGpuUtils = allGpuUtilsResult.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(s => { double.TryParse(s.Trim(), out var v); return v; })
-                        .Where(v => v > 0)
-                        .ToList();
-                    
-                    int gpuIndex = 0;
-                    foreach (var gpuName in gpuLines)
+                    var trimmedName = name.Trim();
+                    if (!string.IsNullOrEmpty(trimmedName) && !trimmedName.Contains("Microsoft Basic"))
                     {
-                        var name = gpuName.Trim();
-                        if (!string.IsNullOrEmpty(name) && !name.Contains("Microsoft Basic"))
-                        {
-                            double usage = 0;
-                            if (allGpuUtils.Count > 0)
-                            {
-                                if (gpuIndex < allGpuUtils.Count)
-                                    usage = allGpuUtils[gpuIndex];
-                                else
-                                    usage = allGpuUtils[0];
-                            }
-                            metrics.GpuList.Add(new GpuInfo { Name = name, Usage = $"{usage}%", UsageValue = usage });
-                            gpuIndex++;
-                        }
+                        _cachedGpuNames.Add(trimmedName);
+                        _cachedGpuIsNvidia.Add(
+                            trimmedName.Contains("NVIDIA") || 
+                            trimmedName.Contains("GeForce") || 
+                            trimmedName.Contains("RTX") || 
+                            trimmedName.Contains("GTX"));
                     }
                 }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Metrics error: {ex.Message}");
-                }
+                
+                _gpuCacheInitialized = true;
+                System.Diagnostics.Debug.WriteLine($"GPU cache initialized with {_cachedGpuNames.Count} GPUs");
+            }
+        }
 
-                return metrics;
+        public static async Task<SystemMetrics> GetCurrentMetricsAsync()
+        {
+            if (!_gpuCacheInitialized) InitializeGpuCache();
+
+            var metrics = new SystemMetrics { Timestamp = DateTime.Now };
+
+            var cpuRamTask = Task.Run(() =>
+            {
+                var script = @"(Get-CimInstance Win32_Processor -Property LoadPercentage).LoadPercentage;$os=Get-CimInstance Win32_OperatingSystem -Property TotalVisibleMemorySize,FreePhysicalMemory;([math]::Round((($os.TotalVisibleMemorySize-$os.FreePhysicalMemory)/$os.TotalVisibleMemorySize)*100,1));(Get-CimInstance Win32_PerfFormattedData_Tcpip_NetworkInterface -Property BytesReceivedPersec -MaxResultCount 1).BytesReceivedPersec/1MB";
+                var result = RunPowerShell(script);
+                var lines = result.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length >= 1 && double.TryParse(lines[0].Trim(), out var cpu)) metrics.CpuUsage = cpu;
+                if (lines.Length >= 2 && double.TryParse(lines[1].Trim(), out var ram)) metrics.RamUsage = ram;
+                if (lines.Length >= 3 && double.TryParse(lines[2].Trim(), out var net)) metrics.NetworkReceived = net;
             });
+
+            var diskTask = Task.Run(() =>
+            {
+                var diskScript = @"$d=Get-CimInstance Win32_LogicalDisk -Property Size,FreeSpace -Filter 'DriveType=3';if($d.Size){$t=($d|Measure-Object -Property Size -Sum).Sum;$f=($d|Measure-Object -Property FreeSpace -Sum).Sum;if($t){[math]::Round((($t-$f)/$t)*100,1)}}else{0}";
+                var diskResult = RunPowerShell(diskScript);
+                if (double.TryParse(diskResult.Trim(), out var disk)) metrics.DiskUsage = disk;
+            });
+
+            var nvidiaTask = Task.Run(() =>
+            {
+                var nvidiaScript = @"(Get-Counter '\NVIDIA GPU(*)\% GPU Usage' -EA SilentlyContinue | Select-Object -ExpandProperty CounterSamples | ForEach-Object { $_.CookedValue }) -join '|||'";
+                var nvidiaResult = RunPowerShell(nvidiaScript);
+                return nvidiaResult.Trim().Split(new[] { "|||" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => { double.TryParse(s.Trim(), out var v); return v; }).ToList();
+            });
+
+            var intelTask = Task.Run(() =>
+            {
+                var intelScript = @"(Get-Counter '\GPU Engine(*)\Utilization Percentage' -EA SilentlyContinue | Select-Object -ExpandProperty CounterSamples | ForEach-Object { $_.CookedValue }) -join '|||'";
+                var intelResult = RunPowerShell(intelScript);
+                return intelResult.Trim().Split(new[] { "|||" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => { double.TryParse(s.Trim(), out var v); return v; }).ToList();
+            });
+
+            await Task.WhenAll(cpuRamTask, diskTask, nvidiaTask, intelTask);
+
+            try
+            {
+                var nvidiaUsages = nvidiaTask.Result;
+                var intelUsages = intelTask.Result;
+                bool nvidiaCounterWorks = nvidiaUsages.Count > 0;
+
+                lock (_gpuCacheLock)
+                {
+                    int nvidiaIdx = 0, intelIdx = 0;
+                    for (int i = 0; i < _cachedGpuNames.Count; i++)
+                    {
+                        double usage = 0;
+                        if (_cachedGpuIsNvidia[i])
+                        {
+                            if (nvidiaCounterWorks && nvidiaIdx < nvidiaUsages.Count)
+                            {
+                                usage = nvidiaUsages[nvidiaIdx];
+                            }
+                            else
+                            {
+                                usage = intelIdx < intelUsages.Count ? intelUsages[intelIdx] : 0;
+                            }
+                            nvidiaIdx++;
+                        }
+                        else
+                        {
+                            usage = intelIdx < intelUsages.Count ? intelUsages[intelIdx] : 0;
+                            intelIdx++;
+                        }
+                        metrics.GpuList.Add(new GpuInfo { Name = _cachedGpuNames[i], Usage = $"{usage:F0}%", UsageValue = usage });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GPU parsing error: {ex.Message}");
+            }
+
+            return metrics;
         }
 
         private static double GetCpuUsage()
@@ -292,6 +350,7 @@ namespace PCBuddy.Services
         public static async Task StartMonitoringAsync(Func<SystemMetrics, Task> onMetricsUpdate, int intervalMs = 1000, CancellationToken token = default)
         {
             System.Diagnostics.Debug.WriteLine("=== StartMonitoringAsync started ===");
+            InitializeGpuCache();
             
             int count = 0;
             while (!token.IsCancellationRequested)
