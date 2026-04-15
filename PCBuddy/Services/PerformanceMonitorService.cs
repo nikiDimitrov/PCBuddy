@@ -135,7 +135,7 @@ namespace PCBuddy.Services
 
             var cpuRamTask = Task.Run(() =>
             {
-                var script = @"(Get-CimInstance Win32_Processor -Property LoadPercentage).LoadPercentage;$os=Get-CimInstance Win32_OperatingSystem -Property TotalVisibleMemorySize,FreePhysicalMemory;([math]::Round((($os.TotalVisibleMemorySize-$os.FreePhysicalMemory)/$os.TotalVisibleMemorySize)*100,1));(Get-CimInstance Win32_PerfFormattedData_Tcpip_NetworkInterface -Property BytesReceivedPersec -MaxResultCount 1).BytesReceivedPersec/1MB";
+                var script = @"(Get-CimInstance Win32_Processor -Property LoadPercentage).LoadPercentage;$os=Get-CimInstance Win32_OperatingSystem -Property TotalVisibleMemorySize,FreePhysicalMemory;([math]::Round((($os.TotalVisibleMemorySize-$os.FreePhysicalMemory)/$os.TotalVisibleMemorySize)*100,1));$n=Get-CimInstance Win32_PerfFormattedData_Tcpip_NetworkInterface;if($n){[math]::Round(($n|Measure-Object -Property BytesReceivedPersec -Sum).Sum/1KB,1)}else{0}";
                 var result = RunPowerShell(script);
                 var lines = result.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 if (lines.Length >= 1 && double.TryParse(lines[0].Trim(), out var cpu)) metrics.CpuUsage = cpu;
@@ -160,7 +160,7 @@ namespace PCBuddy.Services
 
             var intelTask = Task.Run(() =>
             {
-                var intelScript = @"(Get-Counter '\GPU Engine(*)\Utilization Percentage' -EA SilentlyContinue | Select-Object -ExpandProperty CounterSamples | Where-Object { $_.InstanceName -match 'gpu_\d+' } | ForEach-Object { $_.CookedValue }) -join '|||'";
+                var intelScript = @"(Get-Counter '\GPU Engine(*)\Utilization Percentage' -EA SilentlyContinue | Select-Object -ExpandProperty CounterSamples | Where-Object { $_.InstanceName -match '^gpu_\d+' } | ForEach-Object { $_.CookedValue }) -join '|||'";
                 var intelResult = RunPowerShell(intelScript);
                 return intelResult.Trim().Split(new[] { "|||" }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => { double.TryParse(s.Trim(), out var v); return v; }).ToList();

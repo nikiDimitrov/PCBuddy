@@ -177,8 +177,8 @@ namespace PCBuddy.Views
                 }
             }
             
-            if (NetworkDownText != null) NetworkDownText.Text = $"{metrics.NetworkReceived:F1} MB/s";
-            if (NetworkUpText != null) NetworkUpText.Text = $"{metrics.NetworkSent:F1} MB/s";
+            if (NetworkDownText != null) NetworkDownText.Text = $"{metrics.NetworkReceived:F1} KB/s";
+            if (NetworkUpText != null) NetworkUpText.Text = $"{metrics.NetworkSent:F1} KB/s";
 
             if (CpuProgress != null) UpdateGaugeColor(CpuProgress, metrics.CpuUsage);
             if (RamProgress != null) UpdateGaugeColor(RamProgress, metrics.RamUsage);

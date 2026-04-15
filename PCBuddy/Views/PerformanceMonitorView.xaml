@@ -102,11 +102,11 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="Download" Foreground="#9E9E9E" FontSize="11"/>
-                                <TextBlock x:Name="NetworkDownText" Text="0 MB/s" Foreground="#81C784" FontWeight="Bold" FontSize="18"/>
+                                <TextBlock x:Name="NetworkDownText" Text="0 KB/s" Foreground="#81C784" FontWeight="Bold" FontSize="18"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1">
                                 <TextBlock Text="Upload" Foreground="#9E9E9E" FontSize="11"/>
-                                <TextBlock x:Name="NetworkUpText" Text="0 MB/s" Foreground="#64B5F6" FontWeight="Bold" FontSize="18"/>
+                                <TextBlock x:Name="NetworkUpText" Text="0 KB/s" Foreground="#64B5F6" FontWeight="Bold" FontSize="18"/>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
