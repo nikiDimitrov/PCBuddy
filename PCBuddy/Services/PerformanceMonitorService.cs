@@ -160,7 +160,7 @@ namespace PCBuddy.Services
 
             var intelTask = Task.Run(() =>
             {
-                var intelScript = @"(Get-Counter '\GPU Engine(*)\Utilization Percentage' -EA SilentlyContinue | Select-Object -ExpandProperty CounterSamples | ForEach-Object { $_.CookedValue }) -join '|||'";
+                var intelScript = @"(Get-Counter '\GPU Engine(*)\Utilization Percentage' -EA SilentlyContinue | Select-Object -ExpandProperty CounterSamples | Where-Object { $_.InstanceName -match 'gpu_\d+' } | ForEach-Object { $_.CookedValue }) -join '|||'";
                 var intelResult = RunPowerShell(intelScript);
                 return intelResult.Trim().Split(new[] { "|||" }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => { double.TryParse(s.Trim(), out var v); return v; }).ToList();
